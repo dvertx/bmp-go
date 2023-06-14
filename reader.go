@@ -59,7 +59,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	}
 
 	if header.Magic != 0x4D42 {
-		err = errors.New("Not a valid BMP file!")
+		err = errors.New("not a valid BMP file")
 		return nil, err
 	}
 
@@ -69,14 +69,14 @@ func Decode(r io.Reader) (image.Image, error) {
 	}
 
 	if header.Width > 32767 || header.Height > 32767 { // > 32KB?
-		err = errors.New("Image too large")
+		err = errors.New("image too large")
 		return nil, err
 	}
 
 	var imgBytes []byte
 	chunk := make([]byte, 32768) // 32KB
 	for {
-		n, err := r.Read(chunk)
+		n, err := r.Read(chunk) // read all
 
 		if err != nil {
 			if err == io.EOF {
@@ -116,7 +116,7 @@ func Decode(r io.Reader) (image.Image, error) {
 			clrTable := readColorTable(imgBytes, &header)
 			img = decode8(imgBytes, &header, &clrTable)
 		} else {
-			err = errors.New("Bad compression value")
+			err = errors.New("bad compression value")
 			return nil, err
 		}
 	} else if header.Bpp == 4 {
@@ -131,11 +131,11 @@ func Decode(r io.Reader) (image.Image, error) {
 			clrTable := readColorTable(imgBytes, &header)
 			img = decode4(imgBytes, &header, &clrTable)
 		} else {
-			err = errors.New("Bad compression value")
+			err = errors.New("bad compression value")
 			return nil, err
 		}
 	} else {
-		err = errors.New("Unsupported BMP format")
+		err = errors.New("unsupported BMP format")
 		return nil, err
 	}
 
@@ -265,7 +265,7 @@ func decode4(in []byte, header *BMPHeader, table *ColorTable) image.Image {
 
 func decodeRle(in []byte, header *BMPHeader, bits int) (*Bitmap, error) {
 	if (bits != 4) && (bits != 8) {
-		err := errors.New("Bad RLE bits value")
+		err := errors.New("bad RLE bits value")
 		return nil, err
 	}
 
