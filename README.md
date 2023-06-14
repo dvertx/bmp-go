@@ -4,7 +4,7 @@ bmp-go is a Go package aiming to provide abilities to decode BMP image files hav
 
 The code is easy to read and modify to suit your needs. Currently only includes the decoding part. Will update with the encoding part later.  
 
-## Install
+## Installation
 
 Install with `go get -u github.com/dvertx/bmp-go` or by manually cloning this repository into `$GOPATH/src/github.com/dvertx/`
 
@@ -29,6 +29,7 @@ func main() {
 		fmt.Println("Error:", err)
 		return
 	}
+	defer f.Close()
 
 	img, err := bmp.Decode(f)
 	if err != nil {
