@@ -48,6 +48,13 @@ type ColorTable struct {
 	Rows []Color
 }
 
+type BitFields struct {
+	RedMask   uint32
+	GreenMask uint32
+	BlueMask  uint32
+	AlphaMask uint32
+}
+
 var top2bottom bool
 var imageHeight int32
 
@@ -63,7 +70,7 @@ func Decode(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 
-	if header.Compression > 2 {
+	if header.Compression > 3 {
 		err = errors.New("BMP compression not supported by this decoder")
 		return nil, err
 	}
@@ -102,7 +109,7 @@ func Decode(r io.Reader) (image.Image, error) {
 
 	if header.Bpp == 24 || header.Bpp == 32 {
 		img = decodeImg(imgBytes, &header)
-	} else if header.Bpp == 16 && header.Compression == 0 {
+	} else if header.Bpp == 16 {
 		img = decode16(imgBytes, &header)
 	} else if header.Bpp == 8 {
 		if int(header.Compression) == 1 {
@@ -171,6 +178,24 @@ func decodeImg(in []byte, header *BMPHeader) image.Image {
 
 func decode16(in []byte, header *BMPHeader) image.Image {
 	var R, G, B byte
+	var redShift, greenShift uint16 = 7, 2 // RGB555 or RGB565
+	bm := &BitFields{
+		RedMask:   0x7C00,
+		GreenMask: 0x03E0,
+		BlueMask:  0x001F,
+	}
+
+	if header.Compression == 3 {
+		bm.RedMask = uint32(in[1]) << 8
+		bm.GreenMask = uint32(in[5])<<8 | uint32(in[4])
+		if bm.RedMask == 0xF800 {
+			redShift++
+		}
+		if bm.GreenMask == 0x07E0 {
+			greenShift++
+		}
+	}
+
 	img := image.NewRGBA(image.Rect(0, 0, int(header.Width), int(imageHeight)))
 	offset := int32(header.Offset) - 54
 	y1 := 0
@@ -184,9 +209,10 @@ func decode16(in []byte, header *BMPHeader) image.Image {
 		for x := 0; x < int(header.Width)*2; x++ {
 			i := (y*header.Width*2 + int32(x)) + offset // pointer to data
 			val := uint16(in[i]) | uint16(in[i+1])<<8
-			R = byte(val & 0b0111110000000000 >> 7) // mask and shift into 8 bits
-			G = byte(val & 0b1111100000 >> 2)
-			B = byte(val & 0b00011111 << 3)
+
+			R = byte(val & uint16(bm.RedMask) >> redShift) // mask and shift into 8 bits
+			G = byte(val & uint16(bm.GreenMask) >> greenShift)
+			B = byte(val & uint16(bm.BlueMask) << 3)
 
 			c := color.RGBA{R, G, B, 0xFF}
 			img.Set(x1, y1, c)
