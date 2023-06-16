@@ -98,7 +98,7 @@ func Decode(r io.Reader) (image.Image, error) {
 
 	imageHeight = header.Height
 	top2bottom = false
-	if int(header.Height) > 0 && header.Compression == 0 {
+	if int(header.Height) > 0 {
 		top2bottom = false
 	} else {
 		top2bottom = true
@@ -180,7 +180,7 @@ func decode16(in []byte, header *BMPHeader) image.Image {
 	var R, G, B byte
 	var redShift, greenShift uint16 = 7, 2 // RGB555 or RGB565
 	bm := &BitFields{
-		RedMask:   0x7C00,
+		RedMask:   0x7C00, // use word instead of dword to ease shift with var later on
 		GreenMask: 0x03E0,
 		BlueMask:  0x001F,
 	}
